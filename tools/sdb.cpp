@@ -10,6 +10,8 @@
 #include <sstream>
 #include <libsdb/process.hpp>
 #include <libsdb/error.hpp>
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 
 namespace {
 	std::unique_ptr<sdb::process> attach(int argc, const char** argv) {
@@ -37,6 +39,25 @@ namespace {
 		if (str.size() > of.size()) return false;
 		return std::equal(str.begin(), str.end(), of.begin());
 	}
+	void print_help(const std::vector<std::string>& args) {
+		if (args.size() == 1) {
+			std::cerr << R"(Available commands:
+	continue	- Resume the process
+	register	- Commands for operating on registers
+)";
+		}
+		else if (is_prefix(args[1], "register")) {
+			std::cerr << R"(Available commands:
+	read
+	read <register>
+	read all
+	write <register> <value>
+)";
+		}
+		else {
+			std::cerr << "No help available on that\n";
+		}
+	}
 	void print_stop_reason(const sdb::process& process, sdb::stop_reason reason) {
 		std::cout << "Process " << process.pid() << ' ';
 		switch (reason.reason) {
@@ -52,6 +73,35 @@ namespace {
 		}
 		std::cout << std::endl;
 	}
+	void handle_register_read(sdb::process& process, const std::vector<std::string>& args) {
+		auto format = [](auto t) {
+			if constexpr (std::is_floating_point_v<decltype(t)>) {
+				return fmt::format("{}", t);
+			}
+			else if constexpr (std::is_integral_v<decltype(t)>) {
+				return fmt::format("{:#0{}x}", t, sizeof(t) * 2 + 2);
+			}
+			else {
+				return fmt::format("[{:#04x}]", fmt::join(t, " "));
+			}
+		};
+	}
+	void handle_register_command(sdb::process& process, const std::vector<std::string>& args) {
+		if (args.size() < 2) {
+			print_help({ "help", "register" });
+			return;
+		}
+
+		if (is_prefix(args[1], "read")) {
+			handle_register_read(process, args);
+		}
+		else if (is_prefix(args[1], "write")) {
+			handle_register_write(process, args);
+		}
+		else {
+			print_help({ "help", "register" });
+		}
+	}
 	void handle_command(std::unique_ptr<sdb::process>& process, std::string_view line) {
 		auto args = split(line, ' ');
 		auto command = args[0];
@@ -59,6 +109,12 @@ namespace {
 			process->resume();
 			auto reason = process->wait_on_signal();
 			print_stop_reason(*process, reason);
+		}
+		else if (is_prefix(command, "help")) {
+			print_help(args);
+		}
+		else if (is_prefix(command, "register")) {
+			handle_register_command(*process, args);
 		}
 		else {
 			std::cerr << "Unknown command\n";
