@@ -43,7 +43,7 @@ namespace sdb {
 		void write_gprs(const user_regs_struct& gprs);
 		virt_addr get_pc() const {
 			return virt_addr{
-				get_registers().read_by_id_as<std::uint64_t>(register_id::rip);
+				get_registers().read_by_id_as<std::uint64_t>(register_id::rip)
 			};
 		}
 	private:
