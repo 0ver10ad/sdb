@@ -2,6 +2,7 @@
 #include <sys/ptrace.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/personality.h>
 #include <unistd.h>
 #include <libsdb/error.hpp>
 #include <libsdb/pipe.hpp>
@@ -24,6 +25,7 @@ std::unique_ptr<sdb::process> sdb::process::launch(std::filesystem::path path, b
 	}
 
 	if (pid == 0) {
+		personality(ADDR_NO_RANDOMIZE);
 		channel.close_read();
 		if (stdout_replacement) {
 			if (dup2(*stdout_replacement, STDOUT_FILENO) < 0) {
