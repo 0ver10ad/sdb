@@ -56,6 +56,10 @@ namespace sdb {
 
 		const stoppoint_collection<breakpoint_site>&
 		breakpoint_sites() const { return breakpoint_sites_; }
+		void set_pc(virt_addr address) {
+			get_registers().write_by_id(register_id::rip, address.addr());
+		}
+		sdb::stop_reason step_instruction();
 	private:
 		pid_t pid_ = 0;
 		bool terminate_on_end_ = true;
