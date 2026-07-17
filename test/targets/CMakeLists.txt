@@ -12,7 +12,7 @@ endfunction()
 
 add_test_cpp_target(run_endlessly)
 add_test_cpp_target(end_immediately)
-add_test_cpp_target(hello_sdb hello_sdb.cpp)
+add_test_cpp_target(hello_sdb)
 
 add_test_asm_target(reg_write)
 add_test_asm_target(reg_read)
